@@ -1,4 +1,5 @@
 ﻿using System;
+using TelegramBot.Model;
 
 namespace TelegramBot
 {
@@ -6,7 +7,12 @@ namespace TelegramBot
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("Hello World!");
+            var date = "30.04.2021";
+            var currency = "eur";
+            var handler = new JsonHandler();
+            var rate = handler.CreateResponseFromBankAPI(date, currency);
+            
+            Console.WriteLine(rate.ToString());
         }
     }
 }
