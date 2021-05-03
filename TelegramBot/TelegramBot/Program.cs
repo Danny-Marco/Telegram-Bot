@@ -1,20 +1,17 @@
-﻿using System;
-using System.Threading.Tasks;
-using TelegramBot.Model.Response;
+﻿using System.Threading.Tasks;
+using TelegramBot.Model.TelegramBot;
 
 namespace TelegramBot
 {
     class Program
     {
+        private const string TOKEN = "1691813196:AAE1-35CGXuitIIhbqKYAdlurGZurwBu1pg";
+        private const string _url = "https://api.privatbank.ua/p24api/exchange_rates?json&date=";
+
         static async Task Main(string[] args)
         {
-            var url = "https://api.privatbank.ua/p24api/exchange_rates?json&date=";
-            var date = "29.04.2021";
-            var currency = "usd";
-
-            var generatingResponse = new GeneratingResponse();
-            var response = generatingResponse.Response(date, currency, url);
-            Console.WriteLine(response.ToString());
+            var bot = new Bot(TOKEN, _url);
+            bot.Start();
         }
     }
 }

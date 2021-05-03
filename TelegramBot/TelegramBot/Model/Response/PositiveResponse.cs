@@ -9,7 +9,7 @@ namespace TelegramBot.Model.Response
             _rate = rate;
         }
 
-        public string ToString()
+        public override string ToString()
         {
             return CreateMessage();
         }

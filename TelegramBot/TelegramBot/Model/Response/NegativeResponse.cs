@@ -9,7 +9,7 @@ namespace TelegramBot.Model.Response
             _message = message;
         }
 
-        public string ToString()
+        public override string ToString()
         {
             return _message;
         }
