@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using System.Threading.Tasks;
 using Telegram.Bot;
 using Telegram.Bot.Args;
@@ -14,6 +15,7 @@ namespace TelegramBot.Model.TelegramBot
         private readonly string _url;
         private string _date;
         private string _currency;
+        private string _stringJson;
         private IResponseForBot _response;
 
         public Bot(string token, string url)
@@ -40,10 +42,7 @@ namespace TelegramBot.Model.TelegramBot
             bool isDateEmpty = _date == null;
             bool isCurrencyEmpty = _currency == null;
 
-            if (message == null || message.Type != MessageType.Text)
-            {
-                return;
-            }
+            if (message == null || message.Type != MessageType.Text) return;
 
             if (isMessageStart)
             {
@@ -51,18 +50,28 @@ namespace TelegramBot.Model.TelegramBot
                 _date = null;
                 _currency = null;
                 _response = null;
+                _stringJson = null;
             }
 
             if (!isMessageStart && isDateEmpty && isCurrencyEmpty)
             {
                 await SetDate(e);
+                
+                SetResponseIfDateIncorrect();
+
+                if (IsDateCorrect(_date) && !IsDateLaterToday(_date))
+                {
+                    _date = ParseDate(_date);
+                    await SetStringJson();
+                    await ShowMessageGetCurrency(e);
+                }
             }
 
             if (!isMessageStart && !isDateEmpty && isCurrencyEmpty)
             {
                 if (e.Message.Text == null) return;
                 _currency = e.Message.Text;
-                _response = SetResponse(_date, _currency);
+                _response = CreateResponse(_currency);
             }
             
             if (_response != null)
@@ -72,6 +81,79 @@ namespace TelegramBot.Model.TelegramBot
             }
         }
 
+        private async Task SetStringJson()
+        {
+            var stringJson = new StringJson(_url, _date);
+            _stringJson = stringJson.GetStringJson();
+        }
+
+        private void SetResponseIfDateIncorrect()
+        {
+            if (!IsDateCorrect(_date))
+            {
+                _response = new NegativeResponse("Введённая дата не корректна!");
+            }
+
+            if (IsDateLaterToday(_date))
+            {
+                _response = new NegativeResponse("Введённая дата не может быть позже текущей!");
+            }
+        }
+
+        private string ParseDate(string date)
+        {
+            try
+            {
+                var dateValue = DateTime.Parse(date);
+                return dateValue.ToString("dd/MM/yyyy");
+            }
+            catch (FormatException)
+            {
+                throw new FormatException("Неверная дата");
+            }
+        }
+        
+        private bool IsDateCorrect(string date)
+        {
+            try
+            {
+                date = ParseDate(date);
+            }
+            catch
+            {
+                return false;
+            }
+
+            var dateFormat = "dd.MM.yyyy";
+            DateTime outputDate;
+
+            bool isDateCorrect = DateTime.TryParseExact(
+                date,
+                dateFormat,
+                DateTimeFormatInfo.InvariantInfo,
+                DateTimeStyles.None,
+                out outputDate);
+
+            return isDateCorrect;
+        }
+
+        private bool IsDateLaterToday(string date)
+        {
+            try
+            {
+                date = ParseDate(date);
+            }
+            catch
+            {
+                return false;
+            }
+
+            var today = DateTime.Now;
+            DateTime inputDate = Convert.ToDateTime(date);
+            bool isInputDateNotLaterThanNow = inputDate > today;
+            return isInputDateNotLaterThanNow;
+        }
+
         private async void ShowGreeting(MessageEventArgs e)
         {
             await _client.SendTextMessageAsync
@@ -79,7 +161,7 @@ namespace TelegramBot.Model.TelegramBot
                 chatId: e.Message.Chat,
                 text: $"Курс обмена валюты по отношению к гривне.\n" +
                       "Введите дату в формате: дд.мм.гггг\n" +
-                      $"На пример {DateTime.Now:dd.MM.yyyy}"
+                      $"Например: {DateTime.Now:dd.MM.yyyy}"
             );
         }
 
@@ -89,8 +171,6 @@ namespace TelegramBot.Model.TelegramBot
             {
                 _date = e.Message.Text;
             }
-
-            await ShowMessageGetCurrency(e);
         }
 
         private async Task ShowMessageGetCurrency(MessageEventArgs e)
@@ -98,25 +178,19 @@ namespace TelegramBot.Model.TelegramBot
             await _client.SendTextMessageAsync
             (
                 chatId: e.Message.Chat,
-                text: "Ведите 3-х значный код интересующей вас валюты:\nНапример USD"
+                text: "Ведите 3-х значный код интересующей вас валюты:\nНапример usd"
             );
         }
 
         private async Task ShowResponse(MessageEventArgs e)
         {
-            // if (e.Message.Text != null)
-            // {
-            //     _currency = e.Message.Text;
-            // }
-            //
-            // _response = Response(_date, _currency);
-            await _client.SendTextMessageAsync(e.Message.Chat, $"{_response.ToString()}");
+            await _client.SendTextMessageAsync(e.Message.Chat, $"{_response}");
         }
 
-        private IResponseForBot SetResponse(string date, string currency)
+        private IResponseForBot CreateResponse(string currency)
         {
-            var createResponse = new CreateResponse();
-            return createResponse.Response(date, currency, _url);
+            var response = new ParseJsonData();
+            return response.CreateResponseByJsonData(_stringJson, currency);
         }
         
         private async Task PromptToStart(MessageEventArgs e)

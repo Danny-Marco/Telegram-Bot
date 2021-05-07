@@ -8,14 +8,9 @@ namespace TelegramBot.Model
 {
     public class ParseJsonData
     {
-        public IResponseForBot ResponseByJsonData(string jsonString, string currency)
+        public IResponseForBot CreateResponseByJsonData(string jsonString, string currency)
         {
             currency = currency.ToUpper();
-            return CreateResponseByJsonData(jsonString, currency);
-        }
-        
-        private IResponseForBot CreateResponseByJsonData(string jsonString, string currency)
-        {
             IResponseForBot response;
             try
             {

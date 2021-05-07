@@ -15,7 +15,7 @@ namespace TelegramBot.Tests
             var currency = "euR";
             const string expectedResponse =
                 "Курс обмена гривны к EUR:\nКурс покупки: 19,20\nКурс продажи: 20,00";
-            var currentResponse = _parseJsonData.ResponseByJsonData(_json, currency);
+            var currentResponse = _parseJsonData.CreateResponseByJsonData(_json, currency);
             Assert.That(currentResponse.ToString(), Is.EqualTo(expectedResponse));
         }
 
@@ -24,7 +24,7 @@ namespace TelegramBot.Tests
         {
             var currency = "eu";
             const string expectedResponse = "Данные по валюте EU не найдены.\nПроверьте корректность кода валюты.";
-            var currentResponse = _parseJsonData.ResponseByJsonData(_json, currency);
+            var currentResponse = _parseJsonData.CreateResponseByJsonData(_json, currency);
             Assert.That(currentResponse.ToString(), Is.EqualTo(expectedResponse));
         }
     }
