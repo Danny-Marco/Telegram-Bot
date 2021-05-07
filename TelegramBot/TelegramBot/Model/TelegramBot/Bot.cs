@@ -27,7 +27,8 @@ namespace TelegramBot.Model.TelegramBot
 
         public void Start()
         {
-            Console.WriteLine("Бот запустился. Нажмите любую клавишу для выхода");
+            var me = _client.GetMeAsync().Result;
+            Console.WriteLine($"Бот {me.FirstName} запустился. Нажмите любую клавишу для выхода");
             _client.StartReceiving();
             _client.OnMessage += BotOnMessage;
 
@@ -56,14 +57,16 @@ namespace TelegramBot.Model.TelegramBot
             if (!isMessageStart && isDateEmpty && isCurrencyEmpty)
             {
                 await SetDate(e);
-                
-                SetResponseIfDateIncorrect();
 
-                if (IsDateCorrect(_date) && !IsDateLaterToday(_date))
+                if (IsDateCorrect(_date) && !IsDateLaterToday(_date) && IsDateInLastFourYears(_date))
                 {
                     _date = ParseDate(_date);
                     await SetStringJson();
                     await ShowMessageGetCurrency(e);
+                }
+                else
+                {
+                    SetResponseIfDateIncorrect();
                 }
             }
 
@@ -94,9 +97,14 @@ namespace TelegramBot.Model.TelegramBot
                 _response = new NegativeResponse("Введённая дата не корректна!");
             }
 
-            if (IsDateLaterToday(_date))
+            else if (IsDateLaterToday(_date))
             {
                 _response = new NegativeResponse("Введённая дата не может быть позже текущей!");
+            }
+            
+            else if (!IsDateInLastFourYears(_date))
+            {
+                _response = new NegativeResponse("Можно получить курс только за последние 4 года!");
             }
         }
 
@@ -152,6 +160,22 @@ namespace TelegramBot.Model.TelegramBot
             DateTime inputDate = Convert.ToDateTime(date);
             bool isInputDateNotLaterThanNow = inputDate > today;
             return isInputDateNotLaterThanNow;
+        }
+        
+        private bool IsDateInLastFourYears(string date)
+        {
+            try
+            {
+                date = ParseDate(date);
+            }
+            catch
+            {
+                return false;
+            }
+
+            var inputDate = Convert.ToDateTime(date);
+            var startDate = DateTime.Now.AddYears(-4);
+            return inputDate > startDate;
         }
 
         private async void ShowGreeting(MessageEventArgs e)
