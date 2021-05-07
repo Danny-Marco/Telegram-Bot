@@ -11,22 +11,22 @@ namespace TelegramBot.Model
         public IResponseForBot ResponseByJsonData(string jsonString, string currency)
         {
             currency = currency.ToUpper();
-            return ProcessingResponseByJsonData(jsonString, currency);
+            return CreateResponseByJsonData(jsonString, currency);
         }
         
-        private IResponseForBot ProcessingResponseByJsonData(string jsonString, string currency)
+        private IResponseForBot CreateResponseByJsonData(string jsonString, string currency)
         {
             IResponseForBot response;
             try
             {
-                var rates = GetExchangeRatesFromBankApi(jsonString);
-                if (!rates.Any(x => x.Currency == currency))
+                var rates = GetExchangeRatesFromJson(jsonString);
+                if (rates.All(x => x.Currency != currency))
                 {
                     return new NegativeResponse(
                         $"Данные по валюте {currency} не найдены.\nПроверьте корректность кода валюты.");
                 }
 
-                ExchangeRate exchangeRate = GetRateByInputCurrency(currency, rates);
+                ExchangeRate exchangeRate = GetRateByCurrency(currency, rates);
                 response = new PositiveResponse(exchangeRate);
             }
             catch
@@ -37,14 +37,14 @@ namespace TelegramBot.Model
             return response;
         }
         
-        private List<ExchangeRate> GetExchangeRatesFromBankApi(string jsonString)
+        private List<ExchangeRate> GetExchangeRatesFromJson(string jsonString)
         {
             var deserializeRates = JsonConvert.DeserializeObject<CourseDate>(jsonString);
             var rates = deserializeRates.ExchangeRate;
             return rates;
         }
         
-        private ExchangeRate GetRateByInputCurrency(string currency, List<ExchangeRate> rates)
+        private ExchangeRate GetRateByCurrency(string currency, List<ExchangeRate> rates)
         {
             ExchangeRate changeRate = null;
             try

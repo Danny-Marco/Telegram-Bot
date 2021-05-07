@@ -4,7 +4,7 @@ using System.Net;
 
 namespace TelegramBot.Model.Response
 {
-    public class GeneratingResponse
+    public class CreateResponse
     {
         public IResponseForBot Response(string date, string currency, string url)
         {

@@ -18,6 +18,7 @@ namespace TelegramBot.Model.Response
         {
             string message;
             var messageIfExchangeBetterOne =
+                $"Курс обмена гривны к {_rate.Currency}:\n" +
                 $"Курс покупки: {_rate.PurchaseRate:0.00}\nКурс продажи: {_rate.SaleRate:0.00}";
             var messageIfExchangeLessOne = $"Курс нацианального банка: {_rate.SaleRateNB:0.000}";
 

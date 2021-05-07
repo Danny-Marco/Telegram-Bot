@@ -13,11 +13,12 @@ namespace TelegramBot.Tests
         public void ShouldReturnAnswerThatSaleRateIs19_20PurchaseRateIs20_00()
         {
             var currency = "euR";
-            const string expectedResponse = "Курс покупки: 19,20\nКурс продажи: 20,00";
+            const string expectedResponse =
+                "Курс обмена гривны к EUR:\nКурс покупки: 19,20\nКурс продажи: 20,00";
             var currentResponse = _parseJsonData.ResponseByJsonData(_json, currency);
             Assert.That(currentResponse.ToString(), Is.EqualTo(expectedResponse));
         }
-        
+
         [Test]
         public void ShouldReturnAnswerThatDataByCurrencyEUNotFound()
         {

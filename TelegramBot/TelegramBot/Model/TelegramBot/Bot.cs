@@ -9,11 +9,12 @@ namespace TelegramBot.Model.TelegramBot
 {
     public class Bot
     {
+        private static TelegramBotClient _client;
         private readonly string _token;
         private readonly string _url;
-        private static TelegramBotClient _client;
         private string _date;
         private string _currency;
+        private IResponseForBot _response;
 
         public Bot(string token, string url)
         {
@@ -46,53 +47,53 @@ namespace TelegramBot.Model.TelegramBot
 
             if (isMessageStart)
             {
+                ShowGreeting(e);
                 _date = null;
                 _currency = null;
-                ShowGreeting(sender, e);
+                _response = null;
             }
 
             if (!isMessageStart && isDateEmpty && isCurrencyEmpty)
             {
-                await GetDate(sender, e);
+                await SetDate(e);
             }
 
             if (!isMessageStart && !isDateEmpty && isCurrencyEmpty)
             {
-                await ShowResponse(sender, e);
+                if (e.Message.Text == null) return;
+                _currency = e.Message.Text;
+                _response = SetResponse(_date, _currency);
             }
-
-            if (!isMessageStart && !isDateEmpty && isCurrencyEmpty)
+            
+            if (_response != null)
             {
-                await PromptToStart(sender, e);
-            }
-
-            if (isMessageStart && !isDateEmpty && isCurrencyEmpty)
-            {
-                await PromptToStart(sender, e);
+                await ShowResponse(e);
+                await PromptToStart(e);
             }
         }
 
-        private async void ShowGreeting(object sender, MessageEventArgs e)
+        private async void ShowGreeting(MessageEventArgs e)
         {
             await _client.SendTextMessageAsync
             (
                 chatId: e.Message.Chat,
-                text: "Курс обмена валюты по отношению к гривне.\n" +
-                      "Введите дату в формате:\nдд.ММ.гггг\n"
+                text: $"Курс обмена валюты по отношению к гривне.\n" +
+                      "Введите дату в формате: дд.мм.гггг\n" +
+                      $"На пример {DateTime.Now:dd.MM.yyyy}"
             );
         }
 
-        private async Task GetDate(object sender, MessageEventArgs e)
+        private async Task SetDate(MessageEventArgs e)
         {
             if (e.Message.Text != null)
             {
                 _date = e.Message.Text;
             }
 
-            await ShowMessageGetCurrency(sender, e);
+            await ShowMessageGetCurrency(e);
         }
 
-        private async Task ShowMessageGetCurrency(object sender, MessageEventArgs e)
+        private async Task ShowMessageGetCurrency(MessageEventArgs e)
         {
             await _client.SendTextMessageAsync
             (
@@ -101,29 +102,29 @@ namespace TelegramBot.Model.TelegramBot
             );
         }
 
-        private async Task ShowResponse(object sender, MessageEventArgs e)
+        private async Task ShowResponse(MessageEventArgs e)
         {
-            if (e.Message.Text != null)
-            {
-                _currency = e.Message.Text;
-            }
-
-            var response = Response(_date, _currency);
-            await _client.SendTextMessageAsync(e.Message.Chat, $"{response}");
+            // if (e.Message.Text != null)
+            // {
+            //     _currency = e.Message.Text;
+            // }
+            //
+            // _response = Response(_date, _currency);
+            await _client.SendTextMessageAsync(e.Message.Chat, $"{_response.ToString()}");
         }
 
-        private async Task PromptToStart(object sender, MessageEventArgs e)
+        private IResponseForBot SetResponse(string date, string currency)
+        {
+            var createResponse = new CreateResponse();
+            return createResponse.Response(date, currency, _url);
+        }
+        
+        private async Task PromptToStart(MessageEventArgs e)
         {
             await _client.SendTextMessageAsync(e.Message.Chat, $"/start");
             _date = null;
             _currency = null;
-        }
-
-        private string Response(string date, string currency)
-        {
-            var generatingResponse = new GeneratingResponse();
-            var response = generatingResponse.Response(date, currency, _url);
-            return response.ToString();
+            _response = null;
         }
     }
 }
