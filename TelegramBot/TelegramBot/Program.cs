@@ -1,16 +1,19 @@
 ﻿using System.Threading.Tasks;
+using TelegramBot.Model;
 using TelegramBot.Model.TelegramBot;
 
 namespace TelegramBot
 {
     class Program
     {
-        private const string TOKEN = "1691813196:AAE1-35CGXuitIIhbqKYAdlurGZurwBu1pg";
-        private const string _url = "https://api.privatbank.ua/p24api/exchange_rates?json&date=";
+        private const string _path = "Config/Config.json";
 
         static async Task Main(string[] args)
         {
-            var bot = new Bot(TOKEN, _url);
+            var dataFromConfigFile = new DataFromFileJson(_path);
+            var data = dataFromConfigFile.GetData();
+            
+            var bot = new Bot(data.token, data.urlApi);
             bot.Start();
         }
     }
