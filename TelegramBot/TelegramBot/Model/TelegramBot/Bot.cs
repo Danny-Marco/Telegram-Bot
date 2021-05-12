@@ -1,10 +1,12 @@
 using System;
 using System.Globalization;
+using System.Linq;
 using System.Threading.Tasks;
 using Telegram.Bot;
 using Telegram.Bot.Args;
 using Telegram.Bot.Types.Enums;
 using TelegramBot.Model.Response;
+using TelegramBot.Model.ValidateInputData;
 
 namespace TelegramBot.Model.TelegramBot
 {
@@ -13,8 +15,6 @@ namespace TelegramBot.Model.TelegramBot
         private static TelegramBotClient _client;
         private readonly string _token;
         private readonly string _url;
-        private string _date;
-        private string _currency;
         private string _stringJson;
         private IResponseForBot _response;
 
@@ -36,177 +36,53 @@ namespace TelegramBot.Model.TelegramBot
             _client.StopReceiving();
         }
 
-        private async void BotOnMessage(object sender, MessageEventArgs e)
+        private void BotOnMessage(object sender, MessageEventArgs e)
         {
             var message = e.Message;
-            bool isMessageStart = message.Text == "/start";
-            bool isDateEmpty = _date == null;
-            bool isCurrencyEmpty = _currency == null;
 
             if (message == null || message.Type != MessageType.Text) return;
 
-            if (isMessageStart)
+            if (message.Text == "/start")
             {
                 ShowGreeting(e);
-                _date = null;
-                _currency = null;
-                _response = null;
-                _stringJson = null;
             }
 
-            if (!isMessageStart && isDateEmpty && isCurrencyEmpty)
+            else
             {
-                await SetDate(e);
+                var currency = message.Text.Split(" ").First();
+                var date = message.Text.Split(" ").Last();
+                var validateDate = new ValidateDate(date);
 
-                if (IsDateCorrect(_date) && !IsDateLaterToday(_date) && IsDateInLastFourYears(_date))
+                if (validateDate.IsDateCorrect())
                 {
-                    _date = ParseDate(_date);
-                    await SetStringJson();
-                    await ShowMessageGetCurrency(e);
+                    date = DateTime.Parse(date).ToString("dd/MM/yyyy");
+                    SetStringJson(date);
+                    _response = CreateResponse(currency);
                 }
                 else
                 {
-                    SetResponseIfDateIncorrect();
+                    _response = validateDate.CreateResponseIfDateIncorrect();
                 }
-            }
-
-            if (!isMessageStart && !isDateEmpty && isCurrencyEmpty)
-            {
-                if (e.Message.Text == null) return;
-                _currency = e.Message.Text;
-                _response = CreateResponse(_currency);
             }
             
             if (_response != null)
             {
-                await ShowResponse(e);
-                await PromptToStart(e);
-            }
-        }
-
-        private async Task SetStringJson()
-        {
-            var stringJson = new StringJson(_url, _date);
-            _stringJson = stringJson.GetStringJson();
-        }
-
-        private void SetResponseIfDateIncorrect()
-        {
-            if (!IsDateCorrect(_date))
-            {
-                _response = new NegativeResponse("Введённая дата не корректна!");
-            }
-
-            else if (IsDateLaterToday(_date))
-            {
-                _response = new NegativeResponse("Введённая дата не может быть позже текущей!");
-            }
-            
-            else if (!IsDateInLastFourYears(_date))
-            {
-                _response = new NegativeResponse("Можно получить курс только за последние 4 года!");
-            }
-        }
-
-        private string ParseDate(string date)
-        {
-            try
-            {
-                var dateValue = DateTime.Parse(date);
-                return dateValue.ToString("dd/MM/yyyy");
-            }
-            catch (FormatException)
-            {
-                throw new FormatException("Неверная дата");
+                ShowResponse(e);
             }
         }
         
-        private bool IsDateCorrect(string date)
-        {
-            try
-            {
-                date = ParseDate(date);
-            }
-            catch
-            {
-                return false;
-            }
-
-            var dateFormat = "dd.MM.yyyy";
-            DateTime outputDate;
-
-            bool isDateCorrect = DateTime.TryParseExact(
-                date,
-                dateFormat,
-                DateTimeFormatInfo.InvariantInfo,
-                DateTimeStyles.None,
-                out outputDate);
-
-            return isDateCorrect;
-        }
-
-        private bool IsDateLaterToday(string date)
-        {
-            try
-            {
-                date = ParseDate(date);
-            }
-            catch
-            {
-                return false;
-            }
-
-            var today = DateTime.Now;
-            DateTime inputDate = Convert.ToDateTime(date);
-            bool isInputDateNotLaterThanNow = inputDate > today;
-            return isInputDateNotLaterThanNow;
-        }
-        
-        private bool IsDateInLastFourYears(string date)
-        {
-            try
-            {
-                date = ParseDate(date);
-            }
-            catch
-            {
-                return false;
-            }
-
-            var inputDate = Convert.ToDateTime(date);
-            var startDate = DateTime.Now.AddYears(-4);
-            return inputDate > startDate;
-        }
-
         private async void ShowGreeting(MessageEventArgs e)
         {
             await _client.SendTextMessageAsync
             (
                 chatId: e.Message.Chat,
                 text: $"Курс обмена валюты по отношению к гривне.\n" +
-                      "Введите дату в формате: дд.мм.гггг\n" +
-                      $"Например: {DateTime.Now:dd.MM.yyyy}"
+                      "Введите данные в формате: код валюты дата\n" +
+                      $"Например: usd {DateTime.Now:dd.MM.yyyy}"
             );
         }
-
-        private async Task SetDate(MessageEventArgs e)
-        {
-            if (e.Message.Text != null)
-            {
-                _date = e.Message.Text;
-            }
-        }
-
-        private async Task ShowMessageGetCurrency(MessageEventArgs e)
-        {
-            await _client.SendTextMessageAsync
-            (
-                chatId: e.Message.Chat,
-                text: "Ведите 3-х значный код интересующей вас валюты:\nНапример usd"
-            );
-        }
-
-        private async Task ShowResponse(MessageEventArgs e)
+        
+        private async void ShowResponse(MessageEventArgs e)
         {
             await _client.SendTextMessageAsync(e.Message.Chat, $"{_response}");
         }
@@ -216,13 +92,11 @@ namespace TelegramBot.Model.TelegramBot
             var response = new ParseJsonData();
             return response.CreateResponseByJsonData(_stringJson, currency);
         }
-        
-        private async Task PromptToStart(MessageEventArgs e)
+
+        private void SetStringJson(string date)
         {
-            await _client.SendTextMessageAsync(e.Message.Chat, $"/start");
-            _date = null;
-            _currency = null;
-            _response = null;
+            var stringJson = new StringJson(_url, date);
+            _stringJson = stringJson.GetStringJson();
         }
     }
 }
