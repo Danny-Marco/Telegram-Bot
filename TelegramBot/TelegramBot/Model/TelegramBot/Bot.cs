@@ -10,11 +10,11 @@ namespace TelegramBot.Model.TelegramBot
     {
         private readonly string _token;
 
-        public string API_URL { get; }
+        private string API_URL { get; }
 
-        public TelegramBotClient Client { get; }
+        private TelegramBotClient Client { get; }
 
-        public IResponseForBot Response { get; set; }
+        private IResponseForBot Response { get; set; }
 
         public Bot(string token, string apiUrl)
         {
@@ -36,9 +36,14 @@ namespace TelegramBot.Model.TelegramBot
 
         private void BotOnMessage(object sender, MessageEventArgs e)
         {
-            var bot = this;
-            var handler = new MessageHandler(ref bot, e);
-            handler.Processing(ref bot);
+            var handler = new MessageHandler(API_URL, e);
+            Response = handler.Processing();
+            ShowResponse(e);
+        }
+        
+        private async void ShowResponse(MessageEventArgs e)
+        {
+            await Client.SendTextMessageAsync(e.Message.Chat, $"{Response}");
         }
     }
 }

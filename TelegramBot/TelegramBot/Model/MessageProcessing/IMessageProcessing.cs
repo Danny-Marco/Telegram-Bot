@@ -1,9 +1,10 @@
 using Telegram.Bot.Args;
+using TelegramBot.Model.Response;
 
 namespace TelegramBot.Model.MessageProcessing
 {
     public interface IMessageProcessing
     {
-        void Response(MessageEventArgs eventArgs);
+        IResponseForBot Response(MessageEventArgs eventArgs);
     }
 }

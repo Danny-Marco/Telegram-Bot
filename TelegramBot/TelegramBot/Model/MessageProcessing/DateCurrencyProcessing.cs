@@ -9,15 +9,16 @@ namespace TelegramBot.Model.MessageProcessing
 {
     public class DateCurrencyProcessing : IMessageProcessing
     {
-        private readonly Bot _bot;
+        private readonly string _url;
 
-        public DateCurrencyProcessing(ref Bot bot)
+        public DateCurrencyProcessing(string url)
         {
-            _bot = bot;
+            _url = url;
         }
 
-        public void Response(MessageEventArgs eventArgs)
+        public IResponseForBot Response(MessageEventArgs eventArgs)
         {
+            IResponseForBot response;
             var message = eventArgs.Message.Text;
             var currency = message.Split(" ").First();
             var date = message.Split(" ").Last();
@@ -26,12 +27,14 @@ namespace TelegramBot.Model.MessageProcessing
 
             if (validateDate.IsDateCorrect())
             {
-                _bot.Response = CreateResponse(currency, date);
+                response = CreateResponse(currency, date);
             }
             else
             {
-                _bot.Response = validateDate.CreateResponseIfDateIncorrect();
+                response = validateDate.CreateResponseIfDateIncorrect();
             }
+
+            return response;
         }
 
         private IResponseForBot CreateResponse(string currency, string date)
@@ -44,7 +47,7 @@ namespace TelegramBot.Model.MessageProcessing
 
         private string GetStringJson(string date)
         {
-            var stringJson = new StringJson(_bot.API_URL, date);
+            var stringJson = new StringJson(_url, date);
             return stringJson.GetStringJson();
         }
     }

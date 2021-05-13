@@ -1,49 +1,40 @@
 using Telegram.Bot.Args;
 using Telegram.Bot.Types.Enums;
-using TelegramBot.Model.TelegramBot;
+using TelegramBot.Model.Response;
 
 namespace TelegramBot.Model.MessageProcessing
 {
     public class MessageHandler
     {
         private readonly MessageEventArgs _eventArgs;
-        private readonly Bot _bot;
+        private readonly string _url;
 
-        public MessageHandler(ref Bot bot, MessageEventArgs eventArgs)
+        public MessageHandler(string url, MessageEventArgs eventArgs)
         {
+            _url = url;
             _eventArgs = eventArgs;
-            _bot = bot;
         }
 
-        public void Processing(ref Bot bot)
+        public IResponseForBot Processing()
         {
             var message = _eventArgs.Message;
-            if (message == null || message.Type != MessageType.Text) return;
+            if (message == null || message.Type != MessageType.Text) return null;
 
             if (message.Text == "/start")
             {
-                CreateResponse(new StartMessageProcessing(ref bot));
+                return CreateResponse(new StartMessageProcessing());
             }
 
             if (message.Text != "/start")
             {
-                CreateResponse(new DateCurrencyProcessing(ref bot));
+                return CreateResponse(new DateCurrencyProcessing(_url));
             }
-
-            if (bot.Response != null)
-            {
-                ShowResponse(_eventArgs);
-            }
+            return null;
         }
 
-        private void CreateResponse(IMessageProcessing processing)
+        private IResponseForBot CreateResponse(IMessageProcessing processing)
         {
-            processing.Response(_eventArgs);
-        }
-
-        private async void ShowResponse(MessageEventArgs e)
-        {
-            await _bot.Client.SendTextMessageAsync(e.Message.Chat, $"{_bot.Response}");
+            return processing.Response(_eventArgs);
         }
     }
 }
