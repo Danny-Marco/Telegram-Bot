@@ -12,7 +12,7 @@ namespace TelegramBot
         {
             var dataFromConfigFile = new DataFromFileJson(_path);
             var data = dataFromConfigFile.GetData();
-            
+
             var bot = new Bot(data.token, data.urlApi);
             bot.Start();
         }

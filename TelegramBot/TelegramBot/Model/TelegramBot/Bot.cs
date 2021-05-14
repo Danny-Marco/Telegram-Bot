@@ -9,41 +9,38 @@ namespace TelegramBot.Model.TelegramBot
     public class Bot
     {
         private readonly string _token;
-
-        private string API_URL { get; }
-
-        private TelegramBotClient Client { get; }
-
-        private IResponseForBot Response { get; set; }
+        private readonly string _URL_API;
+        private readonly TelegramBotClient _client;
+        private IResponseForBot _response;
 
         public Bot(string token, string apiUrl)
         {
             _token = token;
-            API_URL = apiUrl;
-            Client = new TelegramBotClient(_token);
+            _URL_API = apiUrl;
+            _client = new TelegramBotClient(_token);
         }
 
         public void Start()
         {
-            var me = Client.GetMeAsync().Result;
+            var me = _client.GetMeAsync().Result;
             Console.WriteLine($"Бот {me.FirstName} запустился. Нажмите любую клавишу для выхода");
-            Client.StartReceiving();
-            Client.OnMessage += BotOnMessage;
+            _client.StartReceiving();
+            _client.OnMessage += BotOnMessage;
 
             Console.ReadKey();
-            Client.StopReceiving();
+            _client.StopReceiving();
         }
 
         private void BotOnMessage(object sender, MessageEventArgs e)
         {
-            var handler = new MessageHandler(API_URL, e);
-            Response = handler.Processing();
+            var handler = new MessageHandler(_URL_API, e);
+            _response = handler.Processing();
             ShowResponse(e);
         }
-        
+
         private async void ShowResponse(MessageEventArgs e)
         {
-            await Client.SendTextMessageAsync(e.Message.Chat, $"{Response}");
+            await _client.SendTextMessageAsync(e.Message.Chat, $"{_response}");
         }
     }
 }

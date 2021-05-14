@@ -31,14 +31,14 @@ namespace TelegramBot.Model
 
             return response;
         }
-        
+
         private List<ExchangeRate> GetExchangeRatesFromJson(string jsonString)
         {
             var deserializeRates = JsonConvert.DeserializeObject<CourseDate>(jsonString);
             var rates = deserializeRates.ExchangeRate;
             return rates;
         }
-        
+
         private ExchangeRate GetRateByCurrency(string currency, List<ExchangeRate> rates)
         {
             ExchangeRate changeRate = null;

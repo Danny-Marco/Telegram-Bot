@@ -19,7 +19,6 @@ namespace TelegramBot.Model.ValidateInputData
             if (!TryParseDate()) return false;
             try
             {
-                // _date = ParseDate(_date);
                 var isDateCorrect = IsDate() && !IsDateLaterToday(_date) && IsDateInLastFourYears(_date);
                 return isDateCorrect;
             }
@@ -33,19 +32,20 @@ namespace TelegramBot.Model.ValidateInputData
         {
             if (string.IsNullOrEmpty(_date))
             {
-                return new NegativeResponse("Дата не введена!");;
+                return new NegativeResponse("Дата не введена!");
+                ;
             }
-            
+
             if (!IsDate())
             {
                 return new NegativeResponse("Введённая дата не корректна!");
             }
-            
+
             if (IsDateLaterToday(_date))
             {
                 return new NegativeResponse("Введённая дата не может быть позже текущей!");
             }
-            
+
             if (!IsDateInLastFourYears(_date))
             {
                 return new NegativeResponse("Можно получить курс только за последние 4 года!");

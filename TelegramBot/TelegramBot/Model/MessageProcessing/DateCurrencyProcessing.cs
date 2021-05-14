@@ -2,7 +2,6 @@ using System;
 using System.Linq;
 using Telegram.Bot.Args;
 using TelegramBot.Model.Response;
-using TelegramBot.Model.TelegramBot;
 using TelegramBot.Model.ValidateInputData;
 
 namespace TelegramBot.Model.MessageProcessing
